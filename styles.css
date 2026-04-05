@@ -36,6 +36,13 @@ body {
   color: #c9dbff;
 }
 
+.build-info {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #93a9d6;
+  opacity: 0.8;
+}
+
 .card {
   background: color-mix(in srgb, var(--card) 94%, black);
   border: 1px solid var(--line);

@@ -11,6 +11,7 @@ const BOT_PRESETS = {
   medium: { reactionMs: 170, shotError: 0.12, jumpChance: 0.45 },
   hard: { reactionMs: 100, shotError: 0.06, jumpChance: 0.65 },
 };
+const BUILD_VERSION = "build-2026-04-05-r4";
 
 const cfg = {
   matchSeconds: 75,
@@ -48,6 +49,7 @@ const ui = {
   mobileUI: document.getElementById("mobileUI"),
   controlLeft: document.getElementById("controlLeft"),
   controlRight: document.getElementById("controlRight"),
+  buildInfo: document.getElementById("buildInfo"),
 };
 
 const ctx = ui.canvas.getContext("2d");
@@ -758,6 +760,7 @@ initSkinsUI();
 setupNav();
 initMobileControls();
 initYandexSdkHooks();
+ui.buildInfo.textContent = `Версия: ${BUILD_VERSION}`;
 window.addEventListener("pointerdown", unlockAudio, { once: true });
 window.addEventListener("keydown", unlockAudio, { once: true });
 ui.musicToggle.addEventListener("change", updateMusicState);
