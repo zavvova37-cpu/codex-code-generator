@@ -192,6 +192,8 @@ function resetEntities() {
     lastY: state.players[0].y - 26,
     noPickupUntil: 0,
     lastReleasedBy: null,
+    spin: 0,
+    angle: 0,
   };
   state.players[0].hasBall = true;
 }
@@ -270,8 +272,12 @@ function shootIfNeeded(p, idx, now, force = false) {
   state.ball.noPickupUntil = now + 220;
   state.ball.lastReleasedBy = p.team;
   const forward = p.team === "A" ? 1 : -1;
-  state.ball.vx = forward * 10.5 + p.vx * 0.2;
-  state.ball.vy = -12 + p.vy * 0.05;
+  const randomSide = (Math.random() - 0.5) * 2.4;
+  const randomUp = Math.random() * 2.6;
+  if (Math.abs(p.y - cfg.floorY) < 1) p.vy = -7.5;
+  state.ball.vx = forward * (8.4 + randomUp) + randomSide + p.vx * 0.18;
+  state.ball.vy = -(9.2 + randomUp) + p.vy * 0.04;
+  state.ball.spin = forward * (0.16 + Math.random() * 0.08);
   actionState[idx].shoot = false;
   actionState[idx].shootQueued = false;
 }
@@ -344,6 +350,7 @@ function updateBall(dt) {
     state.ball.y = p.y - 26;
     state.ball.vx = p.vx;
     state.ball.vy = p.vy;
+    state.ball.spin = 0;
     return;
   }
 
@@ -351,6 +358,8 @@ function updateBall(dt) {
   state.ball.x += state.ball.vx * dt * 0.06;
   state.ball.y += state.ball.vy * dt * 0.06;
   state.ball.vx *= 0.995;
+  state.ball.angle += state.ball.spin * dt * 0.06;
+  state.ball.spin *= 0.992;
 
   const leftBoard = { x: 80, y: 148, w: 8, h: 62 };
   const rightBoard = { x: ui.canvas.width - 88, y: 148, w: 8, h: 62 };
@@ -359,6 +368,7 @@ function updateBall(dt) {
     const inX = state.ball.x + cfg.ballRadius > board.x && state.ball.x - cfg.ballRadius < board.x + board.w;
     if (inX && inY) {
       state.ball.vx *= -0.78;
+      state.ball.spin *= -0.7;
       if (state.ball.x < ui.canvas.width / 2) state.ball.x = board.x - cfg.ballRadius;
       else state.ball.x = board.x + board.w + cfg.ballRadius;
     }
@@ -366,12 +376,14 @@ function updateBall(dt) {
 
   if (state.ball.x < cfg.ballRadius || state.ball.x > ui.canvas.width - cfg.ballRadius) {
     state.ball.vx *= -0.76;
+    state.ball.spin *= -0.75;
     state.ball.x = clamp(state.ball.x, cfg.ballRadius, ui.canvas.width - cfg.ballRadius);
   }
   if (state.ball.y > cfg.floorY - 2) {
     state.ball.y = cfg.floorY - 2;
     state.ball.vy *= -0.66;
     state.ball.vx *= 0.88;
+    state.ball.spin *= 0.86;
   }
 }
 
@@ -413,6 +425,8 @@ function resetAfterScore(lastScorer) {
     state.ball.noPickupUntil = 0;
     state.ball.lastReleasedBy = null;
   }
+  state.ball.spin = 0;
+  state.ball.angle = 0;
   syncBallOwnership();
 }
 
@@ -559,12 +573,16 @@ function drawBall() {
   ctx.beginPath();
   ctx.arc(state.ball.x, state.ball.y, cfg.ballRadius - 3, 0, Math.PI * 2);
   ctx.stroke();
+  ctx.save();
+  ctx.translate(state.ball.x, state.ball.y);
+  ctx.rotate(state.ball.angle);
   ctx.beginPath();
-  ctx.moveTo(state.ball.x - cfg.ballRadius * 0.8, state.ball.y);
-  ctx.lineTo(state.ball.x + cfg.ballRadius * 0.8, state.ball.y);
-  ctx.moveTo(state.ball.x, state.ball.y - cfg.ballRadius * 0.8);
-  ctx.lineTo(state.ball.x, state.ball.y + cfg.ballRadius * 0.8);
+  ctx.moveTo(-cfg.ballRadius * 0.8, 0);
+  ctx.lineTo(cfg.ballRadius * 0.8, 0);
+  ctx.moveTo(0, -cfg.ballRadius * 0.8);
+  ctx.lineTo(0, cfg.ballRadius * 0.8);
   ctx.stroke();
+  ctx.restore();
 }
 
 function drawHud() {
