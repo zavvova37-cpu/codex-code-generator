@@ -370,8 +370,8 @@ function updateBall(dt) {
   state.ball.angle += state.ball.spin * dt * 0.06;
   state.ball.spin *= 0.992;
 
-  const leftBoard = { x: 80, y: 178, w: 8, h: 72 };
-  const rightBoard = { x: ui.canvas.width - 88, y: 178, w: 8, h: 72 };
+  const leftBoard = { x: 138, y: 180, w: 8, h: 78 };
+  const rightBoard = { x: ui.canvas.width - 146, y: 180, w: 8, h: 78 };
   [leftBoard, rightBoard].forEach((board) => {
     const inY = state.ball.y > board.y && state.ball.y < board.y + board.h;
     const inX = state.ball.x + cfg.ballRadius > board.x && state.ball.x - cfg.ballRadius < board.x + board.w;
@@ -396,14 +396,38 @@ function updateBall(dt) {
     if (Math.abs(state.ball.vx) < 0.12) state.ball.vx = 0;
     state.ball.spin *= 0.86;
   }
+
+  const rimY = 214;
+  const rimLeftCenterX = 124;
+  const rimRightCenterX = ui.canvas.width - 124;
+  [
+    { x: rimLeftCenterX, y: rimY, r: 14 },
+    { x: rimRightCenterX, y: rimY, r: 14 },
+  ].forEach((rim) => {
+    const dx = state.ball.x - rim.x;
+    const dy = state.ball.y - rim.y;
+    const dist = Math.hypot(dx, dy);
+    const minDist = cfg.ballRadius + rim.r;
+    if (dist > 0 && dist < minDist && state.ball.y < rimY + 22) {
+      const nx = dx / dist;
+      const ny = dy / dist;
+      const dot = state.ball.vx * nx + state.ball.vy * ny;
+      state.ball.vx -= 2 * dot * nx;
+      state.ball.vy -= 2 * dot * ny;
+      state.ball.vx *= 0.78;
+      state.ball.vy *= 0.78;
+      state.ball.x = rim.x + nx * minDist;
+      state.ball.y = rim.y + ny * minDist;
+    }
+  });
 }
 
 function checkScore() {
   const leftCenterX = 124;
   const rightCenterX = ui.canvas.width - 124;
   const rimY = 214;
-  const rimRadius = 40;
-  const crossFromTopLeft = state.ball.lastY < rimY - 8 && state.ball.y >= rimY - 2;
+  const rimRadius = 48;
+  const crossFromTopLeft = state.ball.lastY < rimY - 12 && state.ball.y >= rimY + 4;
   const inLeft = Math.abs(state.ball.x - leftCenterX) <= rimRadius;
   if (crossFromTopLeft && inLeft) {
     state.scoreB += 2;
@@ -412,7 +436,7 @@ function checkScore() {
     resetAfterScore("B");
   }
 
-  const crossFromTopRight = state.ball.lastY < rimY - 8 && state.ball.y >= rimY - 2;
+  const crossFromTopRight = state.ball.lastY < rimY - 12 && state.ball.y >= rimY + 4;
   const inRight = Math.abs(state.ball.x - rightCenterX) <= rimRadius;
   if (crossFromTopRight && inRight) {
     state.scoreA += 2;
