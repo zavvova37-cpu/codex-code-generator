@@ -165,6 +165,7 @@ function buildPlayer(team, x, skinId) {
     vx: 0,
     vy: 0,
     hasBall: false,
+    lastActionAt: 0,
     color: team === "A" ? skin.color : shadeColor(skin.color, -20),
     accent: skin.accent,
     name: skin.name,
@@ -211,6 +212,28 @@ function maybeAttachBall(p) {
   }
 }
 
+function syncBallOwnership() {
+  const owner = state.ball.owner;
+  state.players[0].hasBall = owner === "A";
+  state.players[1].hasBall = owner === "B";
+}
+
+function trySteal(p, now) {
+  const enemy = state.players.find((x) => x.team !== p.team);
+  if (!enemy || !enemy.hasBall) return false;
+  if (now - p.lastActionAt < 320) return false;
+  const distance = Math.hypot(enemy.x - p.x, enemy.y - p.y);
+  if (distance > 44) return false;
+  p.lastActionAt = now;
+  const success = Math.random() < 0.58;
+  if (!success) return false;
+  state.ball.owner = p.team;
+  syncBallOwnership();
+  state.ball.x = p.x + (p.team === "A" ? 12 : -12);
+  state.ball.y = p.y - 26;
+  return true;
+}
+
 function jumpIfNeeded(p, idx) {
   const jumpPressed = keyboard.has(p.controls.jump) || actionState[idx].jump;
   if (jumpPressed && Math.abs(p.y - cfg.floorY) < 0.2) {
@@ -219,9 +242,15 @@ function jumpIfNeeded(p, idx) {
   actionState[idx].jump = false;
 }
 
-function shootIfNeeded(p, idx) {
+function shootIfNeeded(p, idx, now) {
   const pressed = keyboard.has(p.controls.shoot1) || keyboard.has(p.controls.shoot2) || actionState[idx].shoot;
-  if (!pressed || !p.hasBall) return;
+  if (!pressed) return;
+  if (!p.hasBall || state.ball.owner !== p.team) {
+    trySteal(p, now);
+    return;
+  }
+  if (now - p.lastActionAt < 220) return;
+  p.lastActionAt = now;
   p.hasBall = false;
   state.ball.owner = null;
   const hoopX = p.team === "A" ? ui.canvas.width - 92 : 92;
@@ -242,7 +271,7 @@ function updatePlayer(p, idx, dt) {
   p.vx = axisX * cfg.playerSpeed;
 
   jumpIfNeeded(p, idx);
-  shootIfNeeded(p, idx);
+  shootIfNeeded(p, idx, performance.now());
 
   p.vy += cfg.gravity * dt * 0.06;
   p.x = clamp(p.x + p.vx * dt * 0.06, 22, ui.canvas.width - 22);
@@ -253,6 +282,23 @@ function updatePlayer(p, idx, dt) {
   }
 
   if (!p.hasBall) maybeAttachBall(p);
+}
+
+function resolvePlayerCollision() {
+  const a = state.players[0];
+  const b = state.players[1];
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const minDist = cfg.playerRadius * 1.7;
+  const dist = Math.hypot(dx, dy);
+  if (dist === 0 || dist >= minDist) return;
+  const push = (minDist - dist) / 2;
+  const nx = dx / dist;
+  const ny = dy / dist;
+  a.x = clamp(a.x - nx * push, 22, ui.canvas.width - 22);
+  a.y = clamp(a.y - ny * push, 120, cfg.floorY);
+  b.x = clamp(b.x + nx * push, 22, ui.canvas.width - 22);
+  b.y = clamp(b.y + ny * push, 120, cfg.floorY);
 }
 
 function updateBot(dt, now) {
@@ -328,6 +374,7 @@ function resetAfterScore(lastScorer) {
     state.ball.x = state.players[0].x + 10;
     state.ball.y = state.players[0].y - 26;
   }
+  syncBallOwnership();
 }
 
 function finishMatch() {
@@ -402,24 +449,48 @@ function drawHoop(x, y, side) {
 }
 
 function drawPlayers() {
-  state.players.forEach((p) => {
+  state.players.forEach((p, idx) => {
     const hasBall = p.hasBall;
-    ctx.fillStyle = p.color;
+    const runCycle = Math.sin(performance.now() * 0.015 + idx);
+    const legSwing = runCycle * 3;
+
+    ctx.fillStyle = "rgba(0,0,0,0.25)";
     ctx.beginPath();
-    ctx.arc(p.x, p.y - 24, 11, 0, Math.PI * 2);
+    ctx.ellipse(p.x, p.y + 30, 14, 5, 0, 0, Math.PI * 2);
     ctx.fill();
 
+    ctx.strokeStyle = "#0f1117";
+    ctx.lineWidth = 2;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y - 26, 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
     ctx.fillStyle = p.accent;
-    ctx.fillRect(p.x - 11, p.y - 14, 22, 32);
+    ctx.fillRect(p.x - 11, p.y - 15, 22, 30);
+    ctx.strokeRect(p.x - 11, p.y - 15, 22, 30);
+    ctx.fillStyle = "#f3d4bf";
+    ctx.fillRect(p.x - 12, p.y - 8, 4, 16);
+    ctx.fillRect(p.x + 8, p.y - 8, 4, 16);
+    ctx.strokeRect(p.x - 12, p.y - 8, 4, 16);
+    ctx.strokeRect(p.x + 8, p.y - 8, 4, 16);
+
     ctx.fillStyle = "#12141d";
-    ctx.fillRect(p.x - 10, p.y + 14, 7, 15);
-    ctx.fillRect(p.x + 3, p.y + 14, 7, 15);
+    ctx.fillRect(p.x - 10, p.y + 14, 7, 14 + legSwing);
+    ctx.fillRect(p.x + 3, p.y + 14, 7, 14 - legSwing);
+    ctx.strokeRect(p.x - 10, p.y + 14, 7, 14 + legSwing);
+    ctx.strokeRect(p.x + 3, p.y + 14, 7, 14 - legSwing);
 
     if (hasBall) {
-      ctx.fillStyle = "#ffcb52";
+      ctx.fillStyle = "#ffb13c";
       ctx.beginPath();
-      ctx.arc(p.x + (p.team === "A" ? 16 : -16), p.y - 9, 6, 0, Math.PI * 2);
+      ctx.arc(p.x + (p.team === "A" ? 16 : -16), p.y - 8, 7, 0, Math.PI * 2);
       ctx.fill();
+      ctx.strokeStyle = "#7c4200";
+      ctx.beginPath();
+      ctx.arc(p.x + (p.team === "A" ? 16 : -16), p.y - 8, 5, 0, Math.PI * 2);
+      ctx.stroke();
     }
   });
 }
@@ -455,6 +526,8 @@ function loop(ts) {
       updateBot(dt, ts);
       updatePlayer(state.players[0], 0, dt);
       updatePlayer(state.players[1], 1, dt);
+      resolvePlayerCollision();
+      syncBallOwnership();
       updateBall(dt);
       checkScore();
       drawCourt();
