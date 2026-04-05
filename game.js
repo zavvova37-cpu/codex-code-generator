@@ -72,6 +72,9 @@ const state = {
   gameplayStarted: false,
   audioUnlocked: false,
   musicInterval: null,
+  swishTimerL: 0,
+  swishTimerR: 0,
+  scorePopTimer: 0,
 };
 
 const mobileState = [
@@ -276,13 +279,14 @@ function shootIfNeeded(p, idx, now, force = false) {
   state.ball.owner = null;
   state.ball.noPickupUntil = now + 220;
   state.ball.lastReleasedBy = p.team;
-  const forward = p.team === "A" ? 1 : -1;
-  const randomSide = (Math.random() - 0.5) * 2.4;
-  const randomUp = Math.random() * 2.6;
+  const rimX = p.team === "A" ? ui.canvas.width - 124 : 124;
+  const dx = rimX - p.x;
+  const randomSide = (Math.random() - 0.5) * 1.2;
+  const randomUp = Math.random() * 1.8;
   if (Math.abs(p.y - cfg.floorY) < 1) p.vy = -7.5;
-  state.ball.vx = forward * (8.4 + randomUp) + randomSide + p.vx * 0.18;
-  state.ball.vy = -(9.2 + randomUp) + p.vy * 0.04;
-  state.ball.spin = forward * (0.16 + Math.random() * 0.08);
+  state.ball.vx = dx / 20 + randomSide + p.vx * 0.12;
+  state.ball.vy = -(10.4 + randomUp) + p.vy * 0.03;
+  state.ball.spin = Math.sign(dx || 1) * (0.14 + Math.random() * 0.06);
   actionState[idx].shoot = false;
   actionState[idx].shootQueued = false;
 }
@@ -403,6 +407,8 @@ function checkScore() {
   const inLeft = Math.abs(state.ball.x - leftCenterX) <= rimRadius;
   if (crossFromTopLeft && inLeft) {
     state.scoreB += 2;
+    state.swishTimerL = 280;
+    state.scorePopTimer = 520;
     resetAfterScore("B");
   }
 
@@ -410,6 +416,8 @@ function checkScore() {
   const inRight = Math.abs(state.ball.x - rightCenterX) <= rimRadius;
   if (crossFromTopRight && inRight) {
     state.scoreA += 2;
+    state.swishTimerR = 280;
+    state.scorePopTimer = 520;
     resetAfterScore("A");
   }
 }
@@ -493,6 +501,8 @@ function drawBackdrop() {
 }
 
 function drawHoop(x, y, side) {
+  const swishTimer = side === "left" ? state.swishTimerL : state.swishTimerR;
+  const sway = swishTimer > 0 ? Math.sin(performance.now() * 0.08) * 2.6 : 0;
   ctx.fillStyle = "#82899c";
   ctx.fillRect(side === "left" ? x - 10 : x - 8, y - 16, 14, 96);
 
@@ -508,8 +518,28 @@ function drawHoop(x, y, side) {
     const netX = side === "left" ? x + 45 + i * 6 : x - 9 - i * 6;
     ctx.beginPath();
     ctx.moveTo(netX, y + 30);
-    ctx.lineTo(netX + (side === "left" ? -2 : 2), y + 58);
+    ctx.lineTo(netX + (side === "left" ? -2 : 2) + sway, y + 58);
     ctx.stroke();
+  }
+}
+
+function drawAimGuide() {
+  if (!state.running || state.paused || state.yandexPaused) return;
+  const owner = state.players.find((p) => p.hasBall);
+  if (!owner) return;
+  const rimX = owner.team === "A" ? ui.canvas.width - 124 : 124;
+  const dx = rimX - owner.x;
+  const vx = dx / 20;
+  let vy = -10.4;
+  let x = owner.x;
+  let y = owner.y - 22;
+
+  ctx.fillStyle = "rgba(255,255,255,0.5)";
+  for (let i = 0; i < 10; i += 1) {
+    vy += cfg.gravity * 1.9;
+    x += vx * 0.92;
+    y += vy * 0.92;
+    ctx.fillRect(x - 2, y - 2, 3, 3);
   }
 }
 
@@ -599,6 +629,9 @@ function drawHud() {
   ui.hudTop.textContent = `Счёт ${state.scoreA}:${state.scoreB} · Время ${Math.max(0, Math.ceil(state.timeLeft))}с · ${
     state.mode === "solo" ? `Соло (${state.difficulty})` : "2 игрока"
   } · ${ownerText}`;
+  if (state.scorePopTimer > 0) {
+    ui.hudTop.textContent += " · ГОООЛ!";
+  }
 }
 
 let lastTs = performance.now();
@@ -617,8 +650,12 @@ function loop(ts) {
       resolvePlayerCollision();
       syncBallOwnership();
       updateBall(dt);
+      if (state.swishTimerL > 0) state.swishTimerL -= dt;
+      if (state.swishTimerR > 0) state.swishTimerR -= dt;
+      if (state.scorePopTimer > 0) state.scorePopTimer -= dt;
       checkScore();
       drawCourt();
+      drawAimGuide();
       drawPlayers();
       drawBall();
       drawHud();
