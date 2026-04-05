@@ -190,6 +190,8 @@ function resetEntities() {
     vy: 0,
     owner: "A",
     lastY: state.players[0].y - 26,
+    noPickupUntil: 0,
+    lastReleasedBy: null,
   };
   state.players[0].hasBall = true;
 }
@@ -206,7 +208,8 @@ function startMatch() {
   showScreen("game");
 }
 
-function maybeAttachBall(p) {
+function maybeAttachBall(p, now) {
+  if (now < state.ball.noPickupUntil) return;
   const d = Math.hypot(state.ball.x - p.x, state.ball.y - (p.y - 8));
   if (!state.ball.owner && d < cfg.playerRadius + cfg.ballRadius + 14) {
     state.ball.owner = p.team;
@@ -264,6 +267,8 @@ function shootIfNeeded(p, idx, now, force = false) {
   p.lastActionAt = now;
   p.hasBall = false;
   state.ball.owner = null;
+  state.ball.noPickupUntil = now + 220;
+  state.ball.lastReleasedBy = p.team;
   const forward = p.team === "A" ? 1 : -1;
   state.ball.vx = forward * 10.5 + p.vx * 0.2;
   state.ball.vy = -12 + p.vy * 0.05;
@@ -298,7 +303,7 @@ function updatePlayer(p, idx, dt, now) {
     p.vy = 0;
   }
 
-  if (!p.hasBall) maybeAttachBall(p);
+  if (!p.hasBall) maybeAttachBall(p, now);
 }
 
 function resolvePlayerCollision() {
@@ -397,12 +402,16 @@ function resetAfterScore(lastScorer) {
     state.ball.owner = "B";
     state.ball.x = state.players[1].x - 10;
     state.ball.y = state.players[1].y - 26;
+    state.ball.noPickupUntil = 0;
+    state.ball.lastReleasedBy = null;
   } else {
     state.players[0].hasBall = true;
     state.players[1].hasBall = false;
     state.ball.owner = "A";
     state.ball.x = state.players[0].x + 10;
     state.ball.y = state.players[0].y - 26;
+    state.ball.noPickupUntil = 0;
+    state.ball.lastReleasedBy = null;
   }
   syncBallOwnership();
 }
