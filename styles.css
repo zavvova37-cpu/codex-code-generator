@@ -51,6 +51,21 @@ body {
   margin-top: 12px;
 }
 
+#screenMain {
+  background:
+    linear-gradient(180deg, rgba(10, 14, 25, 0.95) 0%, rgba(10, 14, 25, 0.88) 100%),
+    linear-gradient(90deg, rgba(255, 153, 43, 0.2) 0%, rgba(88, 142, 255, 0.2) 100%);
+  border-color: #3d5688;
+}
+
+#screenMain h2 {
+  font-size: clamp(1.6rem, 3.6vw, 2.5rem);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: center;
+  margin-bottom: 14px;
+}
+
 .menu-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -84,6 +99,8 @@ button:active {
   background: linear-gradient(180deg, #2e4a78 0%, #23395d 100%);
   box-shadow: 0 0 0 rgba(98, 168, 255, 0);
   animation: pulseGlow 2.4s ease-in-out infinite;
+  min-height: 52px;
+  font-size: 1rem;
 }
 
 .menu-grid button::after {

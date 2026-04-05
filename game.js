@@ -366,8 +366,8 @@ function updateBall(dt) {
   state.ball.angle += state.ball.spin * dt * 0.06;
   state.ball.spin *= 0.992;
 
-  const leftBoard = { x: 80, y: 148, w: 8, h: 62 };
-  const rightBoard = { x: ui.canvas.width - 88, y: 148, w: 8, h: 62 };
+  const leftBoard = { x: 80, y: 178, w: 8, h: 72 };
+  const rightBoard = { x: ui.canvas.width - 88, y: 178, w: 8, h: 72 };
   [leftBoard, rightBoard].forEach((board) => {
     const inY = state.ball.y > board.y && state.ball.y < board.y + board.h;
     const inX = state.ball.x + cfg.ballRadius > board.x && state.ball.x - cfg.ballRadius < board.x + board.w;
@@ -386,17 +386,19 @@ function updateBall(dt) {
   }
   if (state.ball.y > cfg.floorY - 2) {
     state.ball.y = cfg.floorY - 2;
-    state.ball.vy *= -0.66;
-    state.ball.vx *= 0.88;
+    state.ball.vy *= -0.78;
+    if (Math.abs(state.ball.vy) < 1.1) state.ball.vy = 0;
+    state.ball.vx *= 0.94;
+    if (Math.abs(state.ball.vx) < 0.12) state.ball.vx = 0;
     state.ball.spin *= 0.86;
   }
 }
 
 function checkScore() {
-  const leftCenterX = 114;
-  const rightCenterX = ui.canvas.width - 114;
-  const rimY = 183;
-  const rimRadius = 32;
+  const leftCenterX = 124;
+  const rightCenterX = ui.canvas.width - 124;
+  const rimY = 214;
+  const rimRadius = 40;
   const crossFromTopLeft = state.ball.lastY < rimY - 8 && state.ball.y >= rimY - 2;
   const inLeft = Math.abs(state.ball.x - leftCenterX) <= rimRadius;
   if (crossFromTopLeft && inLeft) {
@@ -472,8 +474,8 @@ function drawCourt() {
   ctx.lineTo(ui.canvas.width / 2, 493);
   ctx.stroke();
 
-  drawHoop(82, 160, "left");
-  drawHoop(ui.canvas.width - 82, 160, "right");
+  drawHoop(82, 190, "left");
+  drawHoop(ui.canvas.width - 82, 190, "right");
 }
 
 function drawBackdrop() {
