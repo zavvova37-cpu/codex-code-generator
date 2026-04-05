@@ -17,10 +17,10 @@ const cfg = {
   matchSeconds: 75,
   gravity: 0.5,
   floorY: 484,
-  playerRadius: 24,
+  playerRadius: 26,
   playerSpeed: 3.8,
   jumpPower: 11.2,
-  ballRadius: 14,
+  ballRadius: 16,
 };
 
 const ui = {
@@ -173,7 +173,7 @@ function buildPlayer(team, x, skinId) {
     name: skin.name,
     controls:
       team === "A"
-        ? { left: "KeyA", right: "KeyD", jump: "KeyW", shoot1: "KeyS", shoot2: "KeyF" }
+        ? { left: "KeyA", right: "KeyD", jump: "KeyW", shoot1: "KeyS", shoot2: "Space" }
         : { left: "ArrowLeft", right: "ArrowRight", jump: "ArrowUp", shoot1: "ArrowDown", shoot2: "KeyL" },
   };
 }
@@ -227,7 +227,7 @@ function trySteal(p, now) {
   const distance = Math.hypot(enemy.x - p.x, enemy.y - p.y);
   if (distance > 44) return false;
   p.lastActionAt = now;
-  const success = Math.random() < 0.85;
+  const success = Math.random() < 1;
   if (!success) return false;
   state.ball.owner = p.team;
   syncBallOwnership();
@@ -264,11 +264,9 @@ function shootIfNeeded(p, idx, now) {
   p.lastActionAt = now;
   p.hasBall = false;
   state.ball.owner = null;
-  const hoopX = p.team === "A" ? ui.canvas.width - 92 : 92;
-  const dx = hoopX - p.x;
-  const dy = 190 - p.y;
-  state.ball.vx = dx / 24;
-  state.ball.vy = dy / 24 - 7;
+  const forward = p.team === "A" ? 1 : -1;
+  state.ball.vx = forward * 8.8 + p.vx * 0.15;
+  state.ball.vy = -10.2 + p.vy * 0.05;
   actionState[idx].shoot = false;
   actionState[idx].shootQueued = false;
 }
@@ -481,47 +479,47 @@ function drawPlayers() {
 
     ctx.fillStyle = "rgba(0,0,0,0.25)";
     ctx.beginPath();
-    ctx.ellipse(p.x, p.y + 34, 18, 6, 0, 0, Math.PI * 2);
+    ctx.ellipse(p.x, p.y + 38, 21, 7, 0, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.strokeStyle = "#0f1117";
     ctx.lineWidth = 2;
     ctx.fillStyle = p.color;
     ctx.beginPath();
-    ctx.arc(p.x, p.y - 29, 13, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y - 32, 14, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
     ctx.fillStyle = "#1a1a24";
-    ctx.fillRect(p.x - 9, p.y - 36, 18, 5);
+    ctx.fillRect(p.x - 10, p.y - 39, 20, 6);
     ctx.fillStyle = "#f0d2bc";
-    ctx.fillRect(p.x - 3, p.y - 31, 2, 2);
-    ctx.fillRect(p.x + 2, p.y - 31, 2, 2);
+    ctx.fillRect(p.x - 3, p.y - 34, 2, 2);
+    ctx.fillRect(p.x + 2, p.y - 34, 2, 2);
 
     ctx.fillStyle = p.accent;
-    ctx.fillRect(p.x - 14, p.y - 15, 28, 38);
-    ctx.strokeRect(p.x - 14, p.y - 15, 28, 38);
+    ctx.fillRect(p.x - 15, p.y - 14, 30, 42);
+    ctx.strokeRect(p.x - 15, p.y - 14, 30, 42);
     ctx.fillStyle = "#ffffff55";
-    ctx.fillRect(p.x - 14, p.y - 15, 28, 5);
+    ctx.fillRect(p.x - 15, p.y - 14, 30, 6);
     ctx.fillStyle = "#f3d4bf";
-    ctx.fillRect(p.x - 16, p.y - 6, 5, 18);
-    ctx.fillRect(p.x + 11, p.y - 6, 5, 18);
-    ctx.strokeRect(p.x - 16, p.y - 6, 5, 18);
-    ctx.strokeRect(p.x + 11, p.y - 6, 5, 18);
+    ctx.fillRect(p.x - 17, p.y - 5, 5, 20);
+    ctx.fillRect(p.x + 12, p.y - 5, 5, 20);
+    ctx.strokeRect(p.x - 17, p.y - 5, 5, 20);
+    ctx.strokeRect(p.x + 12, p.y - 5, 5, 20);
 
     ctx.fillStyle = "#12141d";
-    ctx.fillRect(p.x - 11, p.y + 22, 8, 14 + legSwing);
-    ctx.fillRect(p.x + 3, p.y + 22, 8, 14 - legSwing);
-    ctx.strokeRect(p.x - 11, p.y + 22, 8, 14 + legSwing);
-    ctx.strokeRect(p.x + 3, p.y + 22, 8, 14 - legSwing);
+    ctx.fillRect(p.x - 12, p.y + 26, 8, 14 + legSwing);
+    ctx.fillRect(p.x + 4, p.y + 26, 8, 14 - legSwing);
+    ctx.strokeRect(p.x - 12, p.y + 26, 8, 14 + legSwing);
+    ctx.strokeRect(p.x + 4, p.y + 26, 8, 14 - legSwing);
 
     if (hasBall) {
       ctx.fillStyle = "#ffb13c";
       ctx.beginPath();
-      ctx.arc(p.x + (p.team === "A" ? 20 : -20), p.y - 7, 10, 0, Math.PI * 2);
+      ctx.arc(p.x + (p.team === "A" ? 23 : -23), p.y - 9, 12, 0, Math.PI * 2);
       ctx.fill();
       ctx.strokeStyle = "#7c4200";
       ctx.beginPath();
-      ctx.arc(p.x + (p.team === "A" ? 20 : -20), p.y - 7, 7, 0, Math.PI * 2);
+      ctx.arc(p.x + (p.team === "A" ? 23 : -23), p.y - 9, 8, 0, Math.PI * 2);
       ctx.stroke();
     }
   });
