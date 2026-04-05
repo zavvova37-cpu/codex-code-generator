@@ -173,8 +173,8 @@ function buildPlayer(team, x, skinId) {
     name: skin.name,
     controls:
       team === "A"
-        ? { left: "KeyA", right: "KeyD", jump: "KeyW", shoot1: "KeyS", shoot2: "Space" }
-        : { left: "ArrowLeft", right: "ArrowRight", jump: "ArrowUp", shoot1: "ArrowDown", shoot2: "KeyL" },
+        ? { left: "KeyA", right: "KeyD", jump: "KeyW", shoot1: "KeyS", shoot2: "KeyF", shoot3: "Space" }
+        : { left: "ArrowLeft", right: "ArrowRight", jump: "ArrowUp", shoot1: "ArrowDown", shoot2: "KeyL", shoot3: "Numpad0" },
   };
 }
 
@@ -251,7 +251,12 @@ function jumpIfNeeded(p, idx) {
 
 function shootIfNeeded(p, idx, now, force = false) {
   const pressed =
-    force || keyboard.has(p.controls.shoot1) || keyboard.has(p.controls.shoot2) || actionState[idx].shoot || actionState[idx].shootQueued;
+    force ||
+    keyboard.has(p.controls.shoot1) ||
+    keyboard.has(p.controls.shoot2) ||
+    keyboard.has(p.controls.shoot3) ||
+    actionState[idx].shoot ||
+    actionState[idx].shootQueued;
   if (!pressed) return;
   if (!p.hasBall && state.ball.owner === null) {
     const distanceToLooseBall = Math.hypot(state.ball.x - p.x, state.ball.y - (p.y - 10));
@@ -335,11 +340,11 @@ function updateBot(dt, now) {
   const preset = BOT_PRESETS[state.difficulty];
   if (now % preset.reactionMs > 16) return;
 
-  const targetX = p.hasBall ? 690 : state.ball.x;
+  const targetX = p.hasBall ? 710 : state.ball.x;
   mobileState[1] = { active: true, dx: Math.sign(targetX - p.x) * (1 - preset.shotError) };
 
   if (Math.random() < preset.jumpChance * 0.015) actionState[1].jump = true;
-  if (p.hasBall && Math.abs(p.x - 690) < 90 && p.y < cfg.floorY - 10) actionState[1].shoot = true;
+  if (p.hasBall && Math.abs(p.x - 710) < 110) actionState[1].shoot = true;
 }
 
 function updateBall(dt) {
@@ -388,19 +393,20 @@ function updateBall(dt) {
 }
 
 function checkScore() {
-  const leftHoop = { x: 85, y: 182, w: 58, h: 8 };
-  const rightHoop = { x: ui.canvas.width - 143, y: 182, w: 58, h: 8 };
-
-  const crossFromTop = state.ball.lastY < leftHoop.y && state.ball.y >= leftHoop.y;
-  const inLeft = state.ball.x > leftHoop.x && state.ball.x < leftHoop.x + leftHoop.w;
-  if (crossFromTop && inLeft) {
+  const leftCenterX = 114;
+  const rightCenterX = ui.canvas.width - 114;
+  const rimY = 183;
+  const rimRadius = 32;
+  const crossFromTopLeft = state.ball.lastY < rimY - 8 && state.ball.y >= rimY - 2;
+  const inLeft = Math.abs(state.ball.x - leftCenterX) <= rimRadius;
+  if (crossFromTopLeft && inLeft) {
     state.scoreB += 2;
     resetAfterScore("B");
   }
 
-  const crossRight = state.ball.lastY < rightHoop.y && state.ball.y >= rightHoop.y;
-  const inRight = state.ball.x > rightHoop.x && state.ball.x < rightHoop.x + rightHoop.w;
-  if (crossRight && inRight) {
+  const crossFromTopRight = state.ball.lastY < rimY - 8 && state.ball.y >= rimY - 2;
+  const inRight = Math.abs(state.ball.x - rightCenterX) <= rimRadius;
+  if (crossFromTopRight && inRight) {
     state.scoreA += 2;
     resetAfterScore("A");
   }
@@ -486,21 +492,21 @@ function drawBackdrop() {
 
 function drawHoop(x, y, side) {
   ctx.fillStyle = "#82899c";
-  ctx.fillRect(side === "left" ? x - 8 : x - 6, y - 12, 12, 88);
+  ctx.fillRect(side === "left" ? x - 10 : x - 8, y - 16, 14, 96);
 
-  ctx.fillStyle = "#9aa4bf";
-  ctx.fillRect(side === "left" ? x : x - 50, y - 6, 50, 12);
+  ctx.fillStyle = "#d5def1";
+  ctx.fillRect(side === "left" ? x : x - 56, y - 10, 56, 16);
 
-  ctx.fillStyle = "#b5491c";
-  ctx.fillRect(side === "left" ? x + 42 : x - 42, y + 18, 32, 8);
+  ctx.fillStyle = "#d75a24";
+  ctx.fillRect(side === "left" ? x + 44 : x - 44, y + 22, 36, 8);
 
-  ctx.strokeStyle = "#7f838f";
+  ctx.strokeStyle = "#b9c1d6";
   ctx.lineWidth = 2;
-  for (let i = 0; i < 5; i += 1) {
-    const netX = side === "left" ? x + 45 + i * 7 : x - 13 - i * 7;
+  for (let i = 0; i < 6; i += 1) {
+    const netX = side === "left" ? x + 45 + i * 6 : x - 9 - i * 6;
     ctx.beginPath();
-    ctx.moveTo(netX, y + 26);
-    ctx.lineTo(netX, y + 52);
+    ctx.moveTo(netX, y + 30);
+    ctx.lineTo(netX + (side === "left" ? -2 : 2), y + 58);
     ctx.stroke();
   }
 }
@@ -535,6 +541,7 @@ function drawPlayers() {
     ctx.fillStyle = "#ffffff55";
     ctx.fillRect(p.x - 18, p.y - 13, 36, 7);
     ctx.fillStyle = "#f3d4bf";
+    ctx.fillRect(p.x - 4, p.y - 18, 8, 6);
     ctx.fillRect(p.x - 20, p.y - 2, 6, 23);
     ctx.fillRect(p.x + 14, p.y - 2, 6, 23);
     ctx.strokeRect(p.x - 20, p.y - 2, 6, 23);
