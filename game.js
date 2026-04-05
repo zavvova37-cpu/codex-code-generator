@@ -281,11 +281,11 @@ function shootIfNeeded(p, idx, now, force = false) {
   state.ball.lastReleasedBy = p.team;
   const rimX = p.team === "A" ? ui.canvas.width - 124 : 124;
   const dx = rimX - p.x;
-  const randomSide = (Math.random() - 0.5) * 1.2;
-  const randomUp = Math.random() * 1.8;
+  const randomSide = (Math.random() - 0.5) * 0.6;
+  const randomUp = Math.random() * 1.1;
   if (Math.abs(p.y - cfg.floorY) < 1) p.vy = -7.5;
-  state.ball.vx = dx / 20 + randomSide + p.vx * 0.12;
-  state.ball.vy = -(10.4 + randomUp) + p.vy * 0.03;
+  state.ball.vx = dx / 14 + randomSide + p.vx * 0.08;
+  state.ball.vy = -(13.2 + randomUp) + p.vy * 0.02;
   state.ball.spin = Math.sign(dx || 1) * (0.14 + Math.random() * 0.06);
   actionState[idx].shoot = false;
   actionState[idx].shootQueued = false;
@@ -423,22 +423,20 @@ function updateBall(dt) {
 }
 
 function checkScore() {
-  const leftCenterX = 124;
-  const rightCenterX = ui.canvas.width - 124;
-  const rimY = 214;
-  const rimRadius = 48;
-  const crossFromTopLeft = state.ball.lastY < rimY - 12 && state.ball.y >= rimY + 4;
-  const inLeft = Math.abs(state.ball.x - leftCenterX) <= rimRadius;
-  if (crossFromTopLeft && inLeft) {
+  const leftZone = { x1: 70, x2: 182, y1: 200, y2: 252 };
+  const rightZone = { x1: ui.canvas.width - 182, x2: ui.canvas.width - 70, y1: 200, y2: 252 };
+  const inLeft =
+    state.ball.x >= leftZone.x1 && state.ball.x <= leftZone.x2 && state.ball.y >= leftZone.y1 && state.ball.y <= leftZone.y2;
+  if (inLeft && state.ball.vy > 0) {
     state.scoreB += 2;
     state.swishTimerL = 280;
     state.scorePopTimer = 520;
     resetAfterScore("B");
   }
 
-  const crossFromTopRight = state.ball.lastY < rimY - 12 && state.ball.y >= rimY + 4;
-  const inRight = Math.abs(state.ball.x - rightCenterX) <= rimRadius;
-  if (crossFromTopRight && inRight) {
+  const inRight =
+    state.ball.x >= rightZone.x1 && state.ball.x <= rightZone.x2 && state.ball.y >= rightZone.y1 && state.ball.y <= rightZone.y2;
+  if (inRight && state.ball.vy > 0) {
     state.scoreA += 2;
     state.swishTimerR = 280;
     state.scorePopTimer = 520;
