@@ -244,9 +244,9 @@ function jumpIfNeeded(p, idx) {
   actionState[idx].jump = false;
 }
 
-function shootIfNeeded(p, idx, now) {
+function shootIfNeeded(p, idx, now, force = false) {
   const pressed =
-    keyboard.has(p.controls.shoot1) || keyboard.has(p.controls.shoot2) || actionState[idx].shoot || actionState[idx].shootQueued;
+    force || keyboard.has(p.controls.shoot1) || keyboard.has(p.controls.shoot2) || actionState[idx].shoot || actionState[idx].shootQueued;
   if (!pressed) return;
   if (!p.hasBall && state.ball.owner === null) {
     const distanceToLooseBall = Math.hypot(state.ball.x - p.x, state.ball.y - (p.y - 10));
@@ -269,6 +269,13 @@ function shootIfNeeded(p, idx, now) {
   state.ball.vy = -12 + p.vy * 0.05;
   actionState[idx].shoot = false;
   actionState[idx].shootQueued = false;
+}
+
+function triggerShootAction(idx) {
+  if (!state.running || state.paused || state.yandexPaused) return;
+  const player = state.players[idx];
+  if (!player) return;
+  shootIfNeeded(player, idx, performance.now(), true);
 }
 
 function updatePlayer(p, idx, dt, now) {
@@ -697,11 +704,10 @@ function initMobileControls() {
   initJoystick(document.getElementById("joyB"), 1);
   holdButton("jumpA", () => (actionState[0].jump = true));
   holdButton("jumpB", () => (actionState[1].jump = true));
-  holdButton("shootA", () => (actionState[0].shootQueued = true), () => {});
-  holdButton("shootB", () => (actionState[1].shootQueued = true), () => {});
+  holdButton("shootA", () => triggerShootAction(0), () => {});
+  holdButton("shootB", () => triggerShootAction(1), () => {});
   ui.canvas.addEventListener("pointerdown", () => {
-    if (!state.running || state.paused || state.yandexPaused) return;
-    actionState[0].shootQueued = true;
+    triggerShootAction(0);
   });
 }
 

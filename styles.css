@@ -66,6 +66,7 @@ input {
   border-radius: 10px;
   padding: 10px 12px;
   font-weight: 600;
+  transition: transform 140ms ease, box-shadow 180ms ease, background 180ms ease;
 }
 
 button.ghost {
@@ -75,6 +76,53 @@ button.ghost {
 
 button:active {
   transform: translateY(1px);
+}
+
+.menu-grid button {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, #2e4a78 0%, #23395d 100%);
+  box-shadow: 0 0 0 rgba(98, 168, 255, 0);
+  animation: pulseGlow 2.4s ease-in-out infinite;
+}
+
+.menu-grid button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 10%, rgba(255, 255, 255, 0.22) 40%, transparent 70%);
+  transform: translateX(-120%);
+  animation: sweep 2.8s ease-in-out infinite;
+}
+
+.menu-grid button:hover {
+  transform: translateY(-1px) scale(1.01);
+  box-shadow: 0 0 14px rgba(98, 168, 255, 0.45);
+}
+
+@keyframes pulseGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(98, 168, 255, 0);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(98, 168, 255, 0.25);
+  }
+}
+
+@keyframes sweep {
+  0% {
+    transform: translateX(-120%);
+  }
+  48% {
+    transform: translateX(-120%);
+  }
+  80% {
+    transform: translateX(120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
 }
 
 label.row {
