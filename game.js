@@ -245,6 +245,13 @@ function jumpIfNeeded(p, idx) {
 function shootIfNeeded(p, idx, now) {
   const pressed = keyboard.has(p.controls.shoot1) || keyboard.has(p.controls.shoot2) || actionState[idx].shoot;
   if (!pressed) return;
+  if (!p.hasBall && state.ball.owner === null) {
+    const distanceToLooseBall = Math.hypot(state.ball.x - p.x, state.ball.y - (p.y - 10));
+    if (distanceToLooseBall < 26) {
+      state.ball.owner = p.team;
+      syncBallOwnership();
+    }
+  }
   if (!p.hasBall || state.ball.owner !== p.team) {
     trySteal(p, now);
     return;
@@ -261,7 +268,7 @@ function shootIfNeeded(p, idx, now) {
   actionState[idx].shoot = false;
 }
 
-function updatePlayer(p, idx, dt) {
+function updatePlayer(p, idx, dt, now) {
   let axisX = 0;
   if (!(state.mode === "solo" && idx === 1)) {
     if (keyboard.has(p.controls.left)) axisX -= 1;
@@ -271,7 +278,7 @@ function updatePlayer(p, idx, dt) {
   p.vx = axisX * cfg.playerSpeed;
 
   jumpIfNeeded(p, idx);
-  shootIfNeeded(p, idx, performance.now());
+  shootIfNeeded(p, idx, now);
 
   p.vy += cfg.gravity * dt * 0.06;
   p.x = clamp(p.x + p.vx * dt * 0.06, 22, ui.canvas.width - 22);
@@ -466,10 +473,17 @@ function drawPlayers() {
     ctx.arc(p.x, p.y - 26, 10, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
+    ctx.fillStyle = "#1a1a24";
+    ctx.fillRect(p.x - 7, p.y - 31, 14, 4);
+    ctx.fillStyle = "#f0d2bc";
+    ctx.fillRect(p.x - 2, p.y - 28, 2, 2);
+    ctx.fillRect(p.x + 2, p.y - 28, 2, 2);
 
     ctx.fillStyle = p.accent;
     ctx.fillRect(p.x - 11, p.y - 15, 22, 30);
     ctx.strokeRect(p.x - 11, p.y - 15, 22, 30);
+    ctx.fillStyle = "#ffffff55";
+    ctx.fillRect(p.x - 11, p.y - 15, 22, 4);
     ctx.fillStyle = "#f3d4bf";
     ctx.fillRect(p.x - 12, p.y - 8, 4, 16);
     ctx.fillRect(p.x + 8, p.y - 8, 4, 16);
@@ -524,8 +538,8 @@ function loop(ts) {
       finishMatch();
     } else {
       updateBot(dt, ts);
-      updatePlayer(state.players[0], 0, dt);
-      updatePlayer(state.players[1], 1, dt);
+      updatePlayer(state.players[0], 0, dt, ts);
+      updatePlayer(state.players[1], 1, dt, ts);
       resolvePlayerCollision();
       syncBallOwnership();
       updateBall(dt);
