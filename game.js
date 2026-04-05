@@ -1,9 +1,9 @@
 const CHARACTER_POOL = [
-  { id: "calm_blue_a", name: "Тихон", color: "#5ca4ff", accent: "#b8e5ff" },
-  { id: "urban_dark_a", name: "Грей", color: "#2b2b35", accent: "#d35b5b" },
-  { id: "ego_striker_a", name: "Рокет", color: "#5a85ff", accent: "#ffffff" },
-  { id: "extra_pose_a", name: "Флэш", color: "#a674ff", accent: "#7affcb" },
-  { id: "adventurer_a", name: "Искра", color: "#4fbf66", accent: "#ffd752" },
+  { id: "calm_blue_a", name: "Кайне", color: "#5ca4ff", accent: "#b8e5ff" },
+  { id: "urban_dark_a", name: "Аоми", color: "#2b2b35", accent: "#d35b5b" },
+  { id: "ego_striker_a", name: "Акар", color: "#5a85ff", accent: "#ffffff" },
+  { id: "extra_pose_a", name: "Тока", color: "#a674ff", accent: "#7affcb" },
+  { id: "adventurer_a", name: "Киро", color: "#4fbf66", accent: "#ffd752" },
 ];
 
 const BOT_PRESETS = {
@@ -68,6 +68,8 @@ const state = {
   hasReadyCalled: false,
   ysdk: null,
   gameplayStarted: false,
+  audioUnlocked: false,
+  musicInterval: null,
 };
 
 const mobileState = [
@@ -179,13 +181,14 @@ function resetEntities() {
     buildPlayer("B", ui.canvas.width - 190, state.p2Skin),
   ];
   state.ball = {
-    x: ui.canvas.width / 2,
-    y: 160,
+    x: state.players[0].x + 10,
+    y: state.players[0].y - 26,
     vx: 0,
     vy: 0,
-    owner: null,
-    lastY: 160,
+    owner: "A",
+    lastY: state.players[0].y - 26,
   };
+  state.players[0].hasBall = true;
 }
 
 function startMatch() {
@@ -202,7 +205,7 @@ function startMatch() {
 
 function maybeAttachBall(p) {
   const d = Math.hypot(state.ball.x - p.x, state.ball.y - (p.y - 8));
-  if (!state.ball.owner && d < cfg.playerRadius + cfg.ballRadius + 4) {
+  if (!state.ball.owner && d < cfg.playerRadius + cfg.ballRadius + 14) {
     state.ball.owner = p.team;
     p.hasBall = true;
   }
@@ -224,8 +227,8 @@ function shootIfNeeded(p, idx) {
   const hoopX = p.team === "A" ? ui.canvas.width - 92 : 92;
   const dx = hoopX - p.x;
   const dy = 190 - p.y;
-  state.ball.vx = dx / 32;
-  state.ball.vy = dy / 32 - 5.8;
+  state.ball.vx = dx / 28;
+  state.ball.vy = dy / 28 - 6.2;
   actionState[idx].shoot = false;
 }
 
@@ -258,11 +261,11 @@ function updateBot(dt, now) {
   const preset = BOT_PRESETS[state.difficulty];
   if (now % preset.reactionMs > 16) return;
 
-  const targetX = p.hasBall ? 700 : state.ball.x;
+  const targetX = p.hasBall ? 690 : state.ball.x;
   mobileState[1] = { active: true, dx: Math.sign(targetX - p.x) * (1 - preset.shotError) };
 
   if (Math.random() < preset.jumpChance * 0.015) actionState[1].jump = true;
-  if (p.hasBall && Math.abs(p.x - 700) < 80 && p.y < cfg.floorY - 20) actionState[1].shoot = true;
+  if (p.hasBall && Math.abs(p.x - 690) < 90 && p.y < cfg.floorY - 10) actionState[1].shoot = true;
 }
 
 function updateBall(dt) {
@@ -292,8 +295,8 @@ function updateBall(dt) {
 }
 
 function checkScore() {
-  const leftHoop = { x: 92, y: 192, w: 48, h: 6 };
-  const rightHoop = { x: ui.canvas.width - 140, y: 192, w: 48, h: 6 };
+  const leftHoop = { x: 85, y: 182, w: 58, h: 8 };
+  const rightHoop = { x: ui.canvas.width - 143, y: 182, w: 58, h: 8 };
 
   const crossFromTop = state.ball.lastY < leftHoop.y && state.ball.y >= leftHoop.y;
   const inLeft = state.ball.x > leftHoop.x && state.ball.x < leftHoop.x + leftHoop.w;
@@ -312,9 +315,19 @@ function checkScore() {
 
 function resetAfterScore(lastScorer) {
   resetEntities();
-  if (lastScorer === "A") state.players[1].hasBall = true;
-  if (lastScorer === "B") state.players[0].hasBall = true;
-  state.ball.owner = lastScorer === "A" ? "B" : "A";
+  if (lastScorer === "A") {
+    state.players[0].hasBall = false;
+    state.players[1].hasBall = true;
+    state.ball.owner = "B";
+    state.ball.x = state.players[1].x - 10;
+    state.ball.y = state.players[1].y - 26;
+  } else {
+    state.players[0].hasBall = true;
+    state.players[1].hasBall = false;
+    state.ball.owner = "A";
+    state.ball.x = state.players[0].x + 10;
+    state.ball.y = state.players[0].y - 26;
+  }
 }
 
 function finishMatch() {
@@ -326,42 +339,88 @@ function finishMatch() {
 }
 
 function drawCourt() {
-  ctx.fillStyle = "#182544";
-  ctx.fillRect(0, 0, ui.canvas.width, ui.canvas.height);
+  drawBackdrop();
+  ctx.fillStyle = "#1a212d";
+  ctx.fillRect(0, 220, ui.canvas.width, 320);
 
-  ctx.fillStyle = "#c7772f";
-  ctx.fillRect(0, 230, ui.canvas.width, 310);
+  ctx.fillStyle = "#2f4032";
+  for (let i = 0; i < ui.canvas.width; i += 24) {
+    ctx.fillRect(i, 205 + (i % 48 === 0 ? 0 : 5), 24, 15);
+  }
 
-  ctx.strokeStyle = "#f9d5a8";
+  ctx.fillStyle = "#6b4b37";
+  for (let i = 0; i < ui.canvas.width; i += 20) {
+    ctx.fillRect(i, 150, 14, 60);
+  }
+
+  ctx.fillStyle = "#2a323d";
+  ctx.fillRect(60, 260, ui.canvas.width - 120, 250);
+
+  ctx.strokeStyle = "#505a69";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(78, 278, ui.canvas.width - 156, 215);
+
   ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.moveTo(ui.canvas.width / 2, 230);
-  ctx.lineTo(ui.canvas.width / 2, ui.canvas.height);
+  ctx.moveTo(ui.canvas.width / 2, 278);
+  ctx.lineTo(ui.canvas.width / 2, 493);
   ctx.stroke();
 
-  drawHoop(92, 170);
-  drawHoop(ui.canvas.width - 92, 170);
+  drawHoop(82, 160, "left");
+  drawHoop(ui.canvas.width - 82, 160, "right");
 }
 
-function drawHoop(x, y) {
-  ctx.fillStyle = "#d9e6ff";
-  ctx.fillRect(x - 8, y - 24, 14, 42);
-  ctx.fillStyle = "#fc6f3f";
-  ctx.fillRect(x, y + 20, 48, 6);
+function drawBackdrop() {
+  ctx.fillStyle = "#171d4a";
+  ctx.fillRect(0, 0, ui.canvas.width, 220);
+  ctx.fillStyle = "#2a3063";
+  for (let i = 0; i < ui.canvas.width; i += 64) {
+    const h = 30 + ((i / 64) % 3) * 12;
+    ctx.fillRect(i, 70 - h / 2, 64, h);
+  }
+}
+
+function drawHoop(x, y, side) {
+  ctx.fillStyle = "#82899c";
+  ctx.fillRect(side === "left" ? x - 8 : x - 6, y - 12, 12, 88);
+
+  ctx.fillStyle = "#9aa4bf";
+  ctx.fillRect(side === "left" ? x : x - 50, y - 6, 50, 12);
+
+  ctx.fillStyle = "#b5491c";
+  ctx.fillRect(side === "left" ? x + 42 : x - 42, y + 18, 32, 8);
+
+  ctx.strokeStyle = "#7f838f";
+  ctx.lineWidth = 2;
+  for (let i = 0; i < 5; i += 1) {
+    const netX = side === "left" ? x + 45 + i * 7 : x - 13 - i * 7;
+    ctx.beginPath();
+    ctx.moveTo(netX, y + 26);
+    ctx.lineTo(netX, y + 52);
+    ctx.stroke();
+  }
 }
 
 function drawPlayers() {
   state.players.forEach((p) => {
+    const hasBall = p.hasBall;
     ctx.fillStyle = p.color;
     ctx.beginPath();
-    ctx.arc(p.x, p.y - 26, 11, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y - 24, 11, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.fillStyle = p.accent;
-    ctx.fillRect(p.x - 10, p.y - 18, 20, 30);
-    ctx.fillStyle = "#1d1d28";
-    ctx.fillRect(p.x - 10, p.y + 12, 7, 16);
-    ctx.fillRect(p.x + 3, p.y + 12, 7, 16);
+    ctx.fillRect(p.x - 11, p.y - 14, 22, 32);
+    ctx.fillStyle = "#12141d";
+    ctx.fillRect(p.x - 10, p.y + 14, 7, 15);
+    ctx.fillRect(p.x + 3, p.y + 14, 7, 15);
+
+    if (hasBall) {
+      ctx.fillStyle = "#ffcb52";
+      ctx.beginPath();
+      ctx.arc(p.x + (p.team === "A" ? 16 : -16), p.y - 9, 6, 0, Math.PI * 2);
+      ctx.fill();
+    }
   });
 }
 
@@ -478,6 +537,43 @@ function holdButton(id, cbDown, cbUp = () => {}) {
   b.addEventListener("pointerleave", cbUp);
 }
 
+function unlockAudio() {
+  if (state.audioUnlocked) return;
+  state.audioUnlocked = true;
+  updateMusicState();
+}
+
+function beep(freq = 220, len = 0.12, gainValue = 0.02) {
+  if (!state.audioUnlocked || !ui.musicToggle.checked) return;
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) return;
+  if (!state.audioCtx) state.audioCtx = new AudioCtx();
+  const osc = state.audioCtx.createOscillator();
+  const gain = state.audioCtx.createGain();
+  osc.type = "square";
+  osc.frequency.value = freq;
+  gain.gain.value = gainValue;
+  osc.connect(gain);
+  gain.connect(state.audioCtx.destination);
+  osc.start();
+  osc.stop(state.audioCtx.currentTime + len);
+}
+
+function updateMusicState() {
+  if (state.musicInterval) {
+    clearInterval(state.musicInterval);
+    state.musicInterval = null;
+  }
+  if (!state.audioUnlocked || !ui.musicToggle.checked) return;
+  const notes = [220, 294, 247, 330];
+  let step = 0;
+  state.musicInterval = setInterval(() => {
+    if (state.paused || state.yandexPaused || !state.running) return;
+    beep(notes[step % notes.length], 0.1, 0.03);
+    step += 1;
+  }, 360);
+}
+
 function initMobileControls() {
   initJoystick(document.getElementById("joyA"), 0);
   initJoystick(document.getElementById("joyB"), 1);
@@ -509,7 +605,8 @@ function initYandexSdkHooks() {
 function applyMobileScheme() {
   const useStick = ui.mobileScheme.value === "stick";
   document.querySelectorAll(".joystick").forEach((node) => {
-    node.style.display = useStick ? "block" : "none";
+    node.style.opacity = useStick ? "1" : "0.75";
+    node.style.transform = useStick ? "scale(1)" : "scale(0.92)";
   });
 }
 
@@ -552,6 +649,9 @@ initSkinsUI();
 setupNav();
 initMobileControls();
 initYandexSdkHooks();
+window.addEventListener("pointerdown", unlockAudio, { once: true });
+window.addEventListener("keydown", unlockAudio, { once: true });
+ui.musicToggle.addEventListener("change", updateMusicState);
 ui.mobileScheme.addEventListener("change", applyMobileScheme);
 applyMobileScheme();
 applyModeUi();
