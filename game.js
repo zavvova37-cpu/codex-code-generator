@@ -77,8 +77,8 @@ const mobileState = [
   { active: false, dx: 0 },
 ];
 const actionState = [
-  { jump: false, shoot: false },
-  { jump: false, shoot: false },
+  { jump: false, shoot: false, shootQueued: false },
+  { jump: false, shoot: false, shootQueued: false },
 ];
 
 function initSkinsUI() {
@@ -243,7 +243,8 @@ function jumpIfNeeded(p, idx) {
 }
 
 function shootIfNeeded(p, idx, now) {
-  const pressed = keyboard.has(p.controls.shoot1) || keyboard.has(p.controls.shoot2) || actionState[idx].shoot;
+  const pressed =
+    keyboard.has(p.controls.shoot1) || keyboard.has(p.controls.shoot2) || actionState[idx].shoot || actionState[idx].shootQueued;
   if (!pressed) return;
   if (!p.hasBall && state.ball.owner === null) {
     const distanceToLooseBall = Math.hypot(state.ball.x - p.x, state.ball.y - (p.y - 10));
@@ -254,6 +255,7 @@ function shootIfNeeded(p, idx, now) {
   }
   if (!p.hasBall || state.ball.owner !== p.team) {
     trySteal(p, now);
+    actionState[idx].shootQueued = false;
     return;
   }
   if (now - p.lastActionAt < 220) return;
@@ -266,6 +268,7 @@ function shootIfNeeded(p, idx, now) {
   state.ball.vx = dx / 28;
   state.ball.vy = dy / 28 - 6.2;
   actionState[idx].shoot = false;
+  actionState[idx].shootQueued = false;
 }
 
 function updatePlayer(p, idx, dt, now) {
@@ -296,7 +299,7 @@ function resolvePlayerCollision() {
   const b = state.players[1];
   const dx = b.x - a.x;
   const dy = b.y - a.y;
-  const minDist = cfg.playerRadius * 1.7;
+  const minDist = cfg.playerRadius * 2.05;
   const dist = Math.hypot(dx, dy);
   if (dist === 0 || dist >= minDist) return;
   const push = (minDist - dist) / 2;
@@ -666,8 +669,8 @@ function initMobileControls() {
   initJoystick(document.getElementById("joyB"), 1);
   holdButton("jumpA", () => (actionState[0].jump = true));
   holdButton("jumpB", () => (actionState[1].jump = true));
-  holdButton("shootA", () => (actionState[0].shoot = true), () => (actionState[0].shoot = false));
-  holdButton("shootB", () => (actionState[1].shoot = true), () => (actionState[1].shoot = false));
+  holdButton("shootA", () => (actionState[0].shootQueued = true), () => {});
+  holdButton("shootB", () => (actionState[1].shootQueued = true), () => {});
 }
 
 function initYandexSdkHooks() {
