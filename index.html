@@ -3,51 +3,135 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>2D Tactical Arena</title>
+    <title>Пиксель-Данк: Дуэль</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <main class="app">
       <header class="topbar">
-        <h1>2D Tactical Arena</h1>
-        <div id="scoreboard">Счёт — Синие: 0 | Красные: 0</div>
+        <h1>Пиксель-Данк: Дуэль</h1>
+        <div id="hudTop" class="hud-top">Готово к матчу</div>
       </header>
+      <div id="buildInfo" class="build-info"></div>
 
-      <section id="lobby" class="lobby">
-        <h2>Выбор персонажей</h2>
-        <p>Выберите бойцов для каждой команды и нажмите «Начать матч».</p>
-        <div class="selectors">
-          <div class="team-select" id="teamASelect"></div>
-          <div class="team-select" id="teamBSelect"></div>
+      <section id="screenMain" class="screen card">
+        <h2>Главное меню</h2>
+        <div class="menu-grid">
+          <button data-nav="mode">Играть</button>
+          <button data-nav="skins">Скины</button>
+          <button data-nav="settings">Настройки</button>
+          <button data-nav="howto">Как играть</button>
+          <button data-nav="legal">Правовая информация</button>
         </div>
-        <button id="startBtn">Начать матч</button>
-        <p class="help">
-          ПК: Игрок A — WASD / F (огонь) / G (граната) / Q (смена оружия).<br />
-          Игрок B — Стрелки / K (огонь) / L (граната) / P (смена оружия).
-        </p>
       </section>
 
-      <section id="arena" class="arena hidden">
-        <canvas id="gameCanvas" width="960" height="540"></canvas>
+      <section id="screenMode" class="screen card hidden">
+        <h2>Выбор режима</h2>
+        <div class="menu-grid">
+          <button id="soloBtn">Соло против бота</button>
+          <button id="localBtn">Два игрока на одном устройстве</button>
+        </div>
+        <button class="ghost" data-nav="main">Назад</button>
+      </section>
 
-        <div class="mobile-ui" id="mobileUI">
-          <div class="control-side left">
-            <div class="joystick" id="joyA"><div class="stick"></div></div>
-            <div class="buttons">
-              <button id="shootA">Огонь</button>
-              <button id="nadeA">Граната</button>
-              <button id="swapA">Оружие</button>
+      <section id="screenDifficulty" class="screen card hidden">
+        <h2>Сложность бота</h2>
+        <div class="menu-grid">
+          <button data-diff="easy">Лёгкий</button>
+          <button data-diff="medium">Средний</button>
+          <button data-diff="hard">Сложный</button>
+        </div>
+        <button class="ghost" data-nav="mode">Назад</button>
+      </section>
+
+      <section id="screenSkins" class="screen card hidden">
+        <h2>Выбор скинов</h2>
+        <p>Оригинальные персонажи, вдохновлённые архетипами без копирования франшиз.</p>
+        <div class="selectors">
+          <label>
+            Игрок 1
+            <select id="skinP1"></select>
+          </label>
+          <label>
+            Игрок 2
+            <select id="skinP2"></select>
+          </label>
+        </div>
+        <button class="ghost" data-nav="main">Готово</button>
+      </section>
+
+      <section id="screenSettings" class="screen card hidden">
+        <h2>Настройки</h2>
+        <label class="row">
+          Музыка
+          <input id="musicToggle" type="checkbox" checked />
+        </label>
+        <label class="row">
+          Эффекты
+          <input id="sfxToggle" type="checkbox" checked />
+        </label>
+        <label class="row">
+          Схема управления (моб.)
+          <select id="mobileScheme">
+            <option value="buttons">Кнопки</option>
+            <option value="stick" selected>Мини-джойстик</option>
+          </select>
+        </label>
+        <button class="ghost" data-nav="main">Назад</button>
+      </section>
+
+      <section id="screenHowto" class="screen card hidden">
+        <h2>Как играть</h2>
+        <ul>
+          <li>Забросьте больше мячей за 75 секунд.</li>
+          <li>P1: A/D — движение, W — прыжок, S/F — бросок.</li>
+          <li>P2: ←/→ — движение, ↑ — прыжок, ↓/L — бросок.</li>
+          <li>На мобиле используйте две панели: левая для P1, правая для P2.</li>
+        </ul>
+        <button class="ghost" data-nav="main">Назад</button>
+      </section>
+
+      <section id="screenLegal" class="screen card hidden">
+        <h2>Правовая информация</h2>
+        <p>
+          Все персонажи и ассеты в этом проекте оригинальные. Не используются названия франшиз,
+          логотипы и узнаваемые копии персонажей.
+        </p>
+        <button class="ghost" data-nav="main">Назад</button>
+      </section>
+
+      <section id="screenGame" class="screen hidden">
+        <div class="arena-wrap card">
+          <canvas id="gameCanvas" width="960" height="540"></canvas>
+          <div class="overlay-row">
+            <button id="pauseBtn">Пауза</button>
+            <button id="backToMenuBtn" class="ghost">В меню</button>
+          </div>
+          <div class="mobile-ui" id="mobileUI">
+            <div class="control-side left" id="controlLeft">
+              <div class="joystick" id="joyA"><div class="stick"></div></div>
+              <div class="buttons">
+                <button id="jumpA">Прыжок</button>
+                <button id="shootA">Бросок</button>
+              </div>
+            </div>
+            <div class="control-side right" id="controlRight">
+              <div class="buttons">
+                <button id="jumpB">Прыжок</button>
+                <button id="shootB">Бросок</button>
+              </div>
+              <div class="joystick" id="joyB"><div class="stick"></div></div>
             </div>
           </div>
+        </div>
+      </section>
 
-          <div class="control-side right">
-            <div class="buttons">
-              <button id="shootB">Огонь</button>
-              <button id="nadeB">Граната</button>
-              <button id="swapB">Оружие</button>
-            </div>
-            <div class="joystick" id="joyB"><div class="stick"></div></div>
-          </div>
+      <section id="screenResults" class="screen card hidden">
+        <h2>Результаты</h2>
+        <p id="resultsText"></p>
+        <div class="menu-grid">
+          <button id="rematchBtn">Реванш</button>
+          <button data-nav="main">Главное меню</button>
         </div>
       </section>
     </main>

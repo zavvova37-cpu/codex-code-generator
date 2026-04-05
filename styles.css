@@ -1,11 +1,10 @@
 :root {
   color-scheme: dark;
-  --bg: #12161f;
-  --card: #1b2130;
-  --line: #2b3348;
-  --text: #e8edff;
-  --accent: #5db1ff;
-  --danger: #ff6868;
+  --bg: #101522;
+  --card: #1a2438;
+  --line: #2c3e61;
+  --text: #e9f1ff;
+  --accent: #62a8ff;
 }
 
 * {
@@ -15,7 +14,7 @@
 
 body {
   margin: 0;
-  background: radial-gradient(circle at top, #1e273a 0%, #10131b 70%);
+  background: radial-gradient(circle at top, #1f3050 0%, #0a101b 66%);
   color: var(--text);
 }
 
@@ -29,10 +28,22 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
-.lobby {
+.hud-top {
+  font-weight: 700;
+  color: #c9dbff;
+}
+
+.build-info {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #93a9d6;
+  opacity: 0.8;
+}
+
+.card {
   background: color-mix(in srgb, var(--card) 94%, black);
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -40,79 +51,148 @@ body {
   margin-top: 12px;
 }
 
-.selectors {
+#screenMain {
+  background:
+    linear-gradient(180deg, rgba(10, 14, 25, 0.95) 0%, rgba(10, 14, 25, 0.88) 100%),
+    linear-gradient(90deg, rgba(255, 153, 43, 0.2) 0%, rgba(88, 142, 255, 0.2) 100%);
+  border-color: #3d5688;
+}
+
+#screenMain h2 {
+  font-size: clamp(1.6rem, 3.6vw, 2.5rem);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+.menu-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  margin: 12px 0;
+  gap: 10px;
 }
 
-.team-select {
-  background: #121828;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 12px;
-}
-
-.team-select h3 {
-  margin-top: 0;
-}
-
-.option-list {
-  display: grid;
-  gap: 8px;
-}
-
-.option-list label {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  padding: 8px;
-  border-radius: 8px;
-  background: #1c2333;
-}
-
-button {
-  border: 1px solid #43608a;
+button,
+select,
+input {
+  border: 1px solid #486495;
   color: var(--text);
-  background: #27344d;
+  background: #27395a;
   border-radius: 10px;
   padding: 10px 12px;
   font-weight: 600;
+  transition: transform 140ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+button.ghost {
+  margin-top: 12px;
+  background: #1a2942;
 }
 
 button:active {
   transform: translateY(1px);
 }
 
-.help {
-  font-size: 0.9rem;
-  opacity: 0.85;
-}
-
-.arena {
+.menu-grid button {
   position: relative;
-  margin-top: 12px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #2e4a78 0%, #23395d 100%);
+  box-shadow: 0 0 0 rgba(98, 168, 255, 0);
+  animation: pulseGlow 2.4s ease-in-out infinite;
+  min-height: 52px;
+  font-size: 1rem;
 }
 
-.hidden {
+.menu-grid button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 10%, rgba(255, 255, 255, 0.22) 40%, transparent 70%);
+  transform: translateX(-120%);
+  animation: sweep 2.8s ease-in-out infinite;
+}
+
+.menu-grid button:hover {
+  transform: translateY(-1px) scale(1.01);
+  box-shadow: 0 0 14px rgba(98, 168, 255, 0.45);
+}
+
+@keyframes pulseGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(98, 168, 255, 0);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(98, 168, 255, 0.25);
+  }
+}
+
+@keyframes sweep {
+  0% {
+    transform: translateX(-120%);
+  }
+  48% {
+    transform: translateX(-120%);
+  }
+  80% {
+    transform: translateX(120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+label.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.selectors {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.selectors label {
+  display: grid;
+  gap: 8px;
+}
+
+.screen.hidden {
   display: none;
+}
+
+.arena-wrap {
+  position: relative;
 }
 
 canvas {
   width: 100%;
   border-radius: 12px;
   border: 1px solid var(--line);
+  image-rendering: pixelated;
   background: #0a0d13;
+}
+
+.overlay-row {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 5;
+  display: flex;
+  gap: 8px;
 }
 
 .mobile-ui {
   position: absolute;
   inset: 0;
+  z-index: 4;
   pointer-events: none;
   display: flex;
   justify-content: space-between;
-  padding: 12px;
+  padding: 12px 12px 16px;
 }
 
 .control-side {
@@ -153,13 +233,19 @@ canvas {
 }
 
 .buttons button {
-  min-width: 84px;
+  min-width: 90px;
+  min-height: 44px;
   background: rgba(31, 45, 70, 0.9);
   border: 1px solid rgba(145, 187, 255, 0.5);
 }
 
 @media (max-width: 900px) {
+  .menu-grid,
   .selectors {
     grid-template-columns: 1fr;
+  }
+
+  .mobile-ui {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
   }
 }
