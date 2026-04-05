@@ -16,10 +16,10 @@ const cfg = {
   matchSeconds: 75,
   gravity: 0.5,
   floorY: 484,
-  playerRadius: 18,
+  playerRadius: 24,
   playerSpeed: 3.8,
-  jumpPower: 10.8,
-  ballRadius: 10,
+  jumpPower: 11.2,
+  ballRadius: 14,
 };
 
 const ui = {
@@ -225,7 +225,7 @@ function trySteal(p, now) {
   const distance = Math.hypot(enemy.x - p.x, enemy.y - p.y);
   if (distance > 44) return false;
   p.lastActionAt = now;
-  const success = Math.random() < 0.58;
+  const success = Math.random() < 0.85;
   if (!success) return false;
   state.ball.owner = p.team;
   syncBallOwnership();
@@ -265,8 +265,8 @@ function shootIfNeeded(p, idx, now) {
   const hoopX = p.team === "A" ? ui.canvas.width - 92 : 92;
   const dx = hoopX - p.x;
   const dy = 190 - p.y;
-  state.ball.vx = dx / 28;
-  state.ball.vy = dy / 28 - 6.2;
+  state.ball.vx = dx / 24;
+  state.ball.vy = dy / 24 - 7;
   actionState[idx].shoot = false;
   actionState[idx].shootQueued = false;
 }
@@ -338,15 +338,28 @@ function updateBall(dt) {
   state.ball.vy += cfg.gravity * dt * 0.06;
   state.ball.x += state.ball.vx * dt * 0.06;
   state.ball.y += state.ball.vy * dt * 0.06;
+  state.ball.vx *= 0.995;
+
+  const leftBoard = { x: 80, y: 148, w: 8, h: 62 };
+  const rightBoard = { x: ui.canvas.width - 88, y: 148, w: 8, h: 62 };
+  [leftBoard, rightBoard].forEach((board) => {
+    const inY = state.ball.y > board.y && state.ball.y < board.y + board.h;
+    const inX = state.ball.x + cfg.ballRadius > board.x && state.ball.x - cfg.ballRadius < board.x + board.w;
+    if (inX && inY) {
+      state.ball.vx *= -0.82;
+      if (state.ball.x < ui.canvas.width / 2) state.ball.x = board.x - cfg.ballRadius;
+      else state.ball.x = board.x + board.w + cfg.ballRadius;
+    }
+  });
 
   if (state.ball.x < cfg.ballRadius || state.ball.x > ui.canvas.width - cfg.ballRadius) {
-    state.ball.vx *= -0.75;
+    state.ball.vx *= -0.8;
     state.ball.x = clamp(state.ball.x, cfg.ballRadius, ui.canvas.width - cfg.ballRadius);
   }
   if (state.ball.y > cfg.floorY - 2) {
     state.ball.y = cfg.floorY - 2;
-    state.ball.vy *= -0.72;
-    state.ball.vx *= 0.96;
+    state.ball.vy *= -0.7;
+    state.ball.vx *= 0.92;
   }
 }
 
@@ -466,47 +479,47 @@ function drawPlayers() {
 
     ctx.fillStyle = "rgba(0,0,0,0.25)";
     ctx.beginPath();
-    ctx.ellipse(p.x, p.y + 30, 14, 5, 0, 0, Math.PI * 2);
+    ctx.ellipse(p.x, p.y + 34, 18, 6, 0, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.strokeStyle = "#0f1117";
     ctx.lineWidth = 2;
     ctx.fillStyle = p.color;
     ctx.beginPath();
-    ctx.arc(p.x, p.y - 26, 10, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y - 29, 13, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
     ctx.fillStyle = "#1a1a24";
-    ctx.fillRect(p.x - 7, p.y - 31, 14, 4);
+    ctx.fillRect(p.x - 9, p.y - 36, 18, 5);
     ctx.fillStyle = "#f0d2bc";
-    ctx.fillRect(p.x - 2, p.y - 28, 2, 2);
-    ctx.fillRect(p.x + 2, p.y - 28, 2, 2);
+    ctx.fillRect(p.x - 3, p.y - 31, 2, 2);
+    ctx.fillRect(p.x + 2, p.y - 31, 2, 2);
 
     ctx.fillStyle = p.accent;
-    ctx.fillRect(p.x - 11, p.y - 15, 22, 30);
-    ctx.strokeRect(p.x - 11, p.y - 15, 22, 30);
+    ctx.fillRect(p.x - 14, p.y - 15, 28, 38);
+    ctx.strokeRect(p.x - 14, p.y - 15, 28, 38);
     ctx.fillStyle = "#ffffff55";
-    ctx.fillRect(p.x - 11, p.y - 15, 22, 4);
+    ctx.fillRect(p.x - 14, p.y - 15, 28, 5);
     ctx.fillStyle = "#f3d4bf";
-    ctx.fillRect(p.x - 12, p.y - 8, 4, 16);
-    ctx.fillRect(p.x + 8, p.y - 8, 4, 16);
-    ctx.strokeRect(p.x - 12, p.y - 8, 4, 16);
-    ctx.strokeRect(p.x + 8, p.y - 8, 4, 16);
+    ctx.fillRect(p.x - 16, p.y - 6, 5, 18);
+    ctx.fillRect(p.x + 11, p.y - 6, 5, 18);
+    ctx.strokeRect(p.x - 16, p.y - 6, 5, 18);
+    ctx.strokeRect(p.x + 11, p.y - 6, 5, 18);
 
     ctx.fillStyle = "#12141d";
-    ctx.fillRect(p.x - 10, p.y + 14, 7, 14 + legSwing);
-    ctx.fillRect(p.x + 3, p.y + 14, 7, 14 - legSwing);
-    ctx.strokeRect(p.x - 10, p.y + 14, 7, 14 + legSwing);
-    ctx.strokeRect(p.x + 3, p.y + 14, 7, 14 - legSwing);
+    ctx.fillRect(p.x - 11, p.y + 22, 8, 14 + legSwing);
+    ctx.fillRect(p.x + 3, p.y + 22, 8, 14 - legSwing);
+    ctx.strokeRect(p.x - 11, p.y + 22, 8, 14 + legSwing);
+    ctx.strokeRect(p.x + 3, p.y + 22, 8, 14 - legSwing);
 
     if (hasBall) {
       ctx.fillStyle = "#ffb13c";
       ctx.beginPath();
-      ctx.arc(p.x + (p.team === "A" ? 16 : -16), p.y - 8, 7, 0, Math.PI * 2);
+      ctx.arc(p.x + (p.team === "A" ? 20 : -20), p.y - 7, 10, 0, Math.PI * 2);
       ctx.fill();
       ctx.strokeStyle = "#7c4200";
       ctx.beginPath();
-      ctx.arc(p.x + (p.team === "A" ? 16 : -16), p.y - 8, 5, 0, Math.PI * 2);
+      ctx.arc(p.x + (p.team === "A" ? 20 : -20), p.y - 7, 7, 0, Math.PI * 2);
       ctx.stroke();
     }
   });
@@ -520,7 +533,13 @@ function drawBall() {
 
   ctx.strokeStyle = "#7c4200";
   ctx.beginPath();
-  ctx.arc(state.ball.x, state.ball.y, cfg.ballRadius - 2, 0, Math.PI * 2);
+  ctx.arc(state.ball.x, state.ball.y, cfg.ballRadius - 3, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(state.ball.x - cfg.ballRadius * 0.8, state.ball.y);
+  ctx.lineTo(state.ball.x + cfg.ballRadius * 0.8, state.ball.y);
+  ctx.moveTo(state.ball.x, state.ball.y - cfg.ballRadius * 0.8);
+  ctx.lineTo(state.ball.x, state.ball.y + cfg.ballRadius * 0.8);
   ctx.stroke();
 }
 
