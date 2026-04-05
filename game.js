@@ -552,9 +552,10 @@ function drawBall() {
 }
 
 function drawHud() {
+  const ownerText = state.ball.owner === "A" ? "мяч: P1" : state.ball.owner === "B" ? "мяч: P2" : "мяч: свободный";
   ui.hudTop.textContent = `Счёт ${state.scoreA}:${state.scoreB} · Время ${Math.max(0, Math.ceil(state.timeLeft))}с · ${
     state.mode === "solo" ? `Соло (${state.difficulty})` : "2 игрока"
-  }`;
+  } · ${ownerText}`;
 }
 
 let lastTs = performance.now();
@@ -698,6 +699,10 @@ function initMobileControls() {
   holdButton("jumpB", () => (actionState[1].jump = true));
   holdButton("shootA", () => (actionState[0].shootQueued = true), () => {});
   holdButton("shootB", () => (actionState[1].shootQueued = true), () => {});
+  ui.canvas.addEventListener("pointerdown", () => {
+    if (!state.running || state.paused || state.yandexPaused) return;
+    actionState[0].shootQueued = true;
+  });
 }
 
 function initYandexSdkHooks() {
